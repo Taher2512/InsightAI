@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - stores Telegram user information
+model User {
+  id          String        @id @default(cuid())
+  telegramId  String        @unique @map("telegram_id")
+  username    String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  
+  wallet      Wallet?
+  analyses    Analysis[]
+  x402Payments X402Payment[]
+  
+  @@map("users")
+}
+
+// Wallet model - stores Solana wallet information
+model Wallet {
+  id                   String   @id @default(cuid())
+  userId               String   @unique @map("user_id")
+  publicKey            String   @unique @map("public_key")
+  encryptedPrivateKey  String   @map("encrypted_private_key")
+  balance              Float    @default(0)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([publicKey])
+  @@map("wallets")
+}
+
+// WhaleAlert model - stores whale transaction alerts
+model WhaleAlert {
+  id            String     @id @default(cuid())
+  walletAddress String     @map("wallet_address")
+  amount        Float
+  token         String
+  actionType    String     @map("action_type") // "deposit" or "withdrawal"
+  exchange      String     @default("Binance")
+  timestamp     DateTime
+  analyzed      Boolean    @default(false)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  
+  analyses      Analysis[]
+  
+  @@index([analyzed])
+  @@index([createdAt])
+  @@map("whale_alerts")
+}
+
+// Analysis model - stores AI analysis requests and results
+model Analysis {
+  id           String      @id @default(cuid())
+  whaleAlertId String      @map("whale_alert_id")
+  userId       String      @map("user_id")
+  cost         Float       @default(0.15)
+  report       Json?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  
+  whaleAlert   WhaleAlert  @relation(fields: [whaleAlertId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([whaleAlertId])
+  @@map("analyses")
+}
+
+// X402Payment model - stores x402 protocol payments for premium APIs
+model X402Payment {
+  id                    String   @id @default(cuid())
+  userId                String   @map("user_id")
+  endpoint              String   // e.g., "historical-patterns", "sentiment-analysis"
+  amount                Float    // Amount in SOL
+  signature             String   @unique // Solana transaction signature
+  status                String   @default("pending") // "pending", "verified", "failed"
+  metadata              Json?    // Store additional info like API response, reasoning, etc.
+  switchboardPrice      Float?   @map("switchboard_price") // Oracle-verified SOL price at time of payment
+  switchboardConfidence Float?   @map("switchboard_confidence") // Oracle confidence score (0-100%)
+  priceTimestamp        DateTime? @map("price_timestamp") // When oracle price was verified
+  createdAt             DateTime @default(now()) @map("created_at")
+  
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([signature])
+  @@index([status])
+  @@map("x402_payments")
+}
+
+// PriceSnapshot model - stores Switchboard oracle price snapshots
+model PriceSnapshot {
+  id          String   @id @default(cuid())
+  asset       String   // e.g., "SOL_USD", "ETH_USD", "BTC_USD"
+  price       Float    // Current price from oracle
+  confidence  Float    // Oracle confidence score (0-100%)
+  oracleCount Int      @map("oracle_count") // Number of oracles reporting
+  variance    Float    // Price variance/standard deviation
+  timestamp   DateTime // When oracle reported this price
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@index([asset])
+  @@index([timestamp])
+  @@index([createdAt])
+  @@map("price_snapshots")
+}
