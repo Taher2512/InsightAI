@@ -1,6 +1,7 @@
 # Corbits x402 Protocol Implementation
 
 ## Overview
+
 Successfully replaced manual USDC transfer implementation with proper Corbits x402 payment protocol. The agent now uses industry-standard x402 HTTP 402 Payment Required responses with automatic payment handling.
 
 ## What Changed
@@ -8,12 +9,14 @@ Successfully replaced manual USDC transfer implementation with proper Corbits x4
 ### 1. Agent Service (`apps/backend/services/agent.service.ts`)
 
 **Before:** Manual USDC transfers
+
 - Used `getOrCreateAssociatedTokenAccount()` to get token accounts
 - Used `transfer()` to manually send USDC
 - Called API after payment confirmation
 - Required manual transaction signing and confirmation
 
 **After:** Corbits x402 Protocol
+
 - Creates wallet interface with `signTransaction` and `updateTransaction` methods
 - Uses `createPaymentHandler()` to create Corbits payment handler
 - Wraps fetch with `wrapFetch()` for automatic x402 payment handling
@@ -21,6 +24,7 @@ Successfully replaced manual USDC transfer implementation with proper Corbits x4
 - No manual transfers needed - all payment logic handled by Corbits
 
 **Key Code Changes:**
+
 ```typescript
 // Create wallet interface for Corbits
 const wallet = {
@@ -51,11 +55,13 @@ const response = await fetchWithPayer(url, { ... });
 ### 2. x402 Server Corbits (`apps/backend/x402-server-corbits.ts`)
 
 **Updated pricing from SOL to USDC:**
+
 - Historical Patterns: 0.5 USDC (was 0.05 SOL)
 - Sentiment Analysis: 0.3 USDC (was 0.03 SOL)
 - Market Impact: 0.4 USDC (was 0.04 SOL)
 
 **USDC decimal handling:**
+
 - USDC uses 6 decimals
 - 0.5 USDC = 500,000 base units
 - 0.3 USDC = 300,000 base units
@@ -64,6 +70,7 @@ const response = await fetchWithPayer(url, { ... });
 ### 3. Imports Updated
 
 **Removed:**
+
 ```typescript
 import {
   getOrCreateAssociatedTokenAccount,
@@ -73,6 +80,7 @@ import {
 ```
 
 **Added:**
+
 ```typescript
 import { VersionedTransaction } from "@solana/web3.js";
 import { createPaymentHandler } from "@faremeter/payment-solana/exact";
@@ -100,11 +108,12 @@ import { lookupKnownSPLToken } from "@faremeter/info/solana";
 ✅ **Automatic:** No manual payment logic needed in agent code  
 ✅ **Secure:** Payment verification handled by Corbits middleware  
 ✅ **Transparent:** Payment details in HTTP headers  
-✅ **Hackathon Compliant:** Proper Corbits protocol implementation  
+✅ **Hackathon Compliant:** Proper Corbits protocol implementation
 
 ## Testing Status
 
 ### Current Environment
+
 - **Network:** Solana devnet
 - **USDC Mint:** `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
 - **User Balance:** 10 USDC on devnet
@@ -113,12 +122,14 @@ import { lookupKnownSPLToken } from "@faremeter/info/solana";
 ### Demo Mode vs Production
 
 **Demo Mode (Current):**
+
 - Server runs on `localhost:3001`
 - Corbits middleware disabled (facilitator can't reach localhost)
 - API returns data without payment verification
 - Used for development and testing
 
 **Production Mode (Requires Public URL):**
+
 - Deploy to Vercel/Railway/Render or use ngrok
 - Enable Corbits middleware in `startX402Server()`
 - Corbits facilitator can verify payments
@@ -143,6 +154,7 @@ bun run apps/backend/index.ts
 ### For Production Deployment
 
 1. **Deploy x402 server to public URL**
+
    ```bash
    # Option 1: Vercel/Railway/Render
    # Option 2: ngrok for testing
@@ -150,11 +162,13 @@ bun run apps/backend/index.ts
    ```
 
 2. **Update baseURL in x402-server.ts**
+
    ```typescript
    const baseURL = process.env.PUBLIC_URL || `https://your-app.vercel.app`;
    ```
 
 3. **Enable Corbits middleware**
+
    ```typescript
    // In startX402Server()
    const middlewares = await createPaywallMiddlewares(); // Uncomment this
@@ -237,6 +251,7 @@ Currently using simulated prices. To integrate Switchboard simulation server:
 ## Payment Metadata
 
 Payments are recorded in database with:
+
 - `paymentMethod: "corbits-x402"`
 - `protocol: "x402"`
 - `currency: "USDC"`
@@ -246,6 +261,7 @@ Payments are recorded in database with:
 ## Dependencies
 
 All Corbits packages installed (v0.11.1):
+
 - ✅ `@faremeter/middleware` - Server-side x402 paywall
 - ✅ `@faremeter/info` - Network/token lookups
 - ✅ `@faremeter/fetch` - Client-side payment wrapper
@@ -254,6 +270,7 @@ All Corbits packages installed (v0.11.1):
 ## Conclusion
 
 The agent now implements proper Corbits x402 protocol as requested. The implementation:
+
 - Uses industry-standard HTTP 402 responses
 - Handles payments automatically via wrapped fetch
 - Follows Corbits quickstart documentation pattern

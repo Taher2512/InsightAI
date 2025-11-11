@@ -131,7 +131,9 @@ export class SwitchboardService {
     }
 
     try {
-      console.log(`🔍 Fetching real ${asset} price from Switchboard simulation server...`);
+      console.log(
+        `🔍 Fetching real ${asset} price from Switchboard simulation server...`
+      );
 
       // Get the oracle job for this asset
       const job = this.priceJobs[asset as keyof typeof this.priceJobs];

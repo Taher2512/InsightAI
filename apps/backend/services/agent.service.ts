@@ -11,7 +11,10 @@ import {
 import { prismaClient as prisma } from "db/client";
 import { decryptPrivateKey } from "../utils/crypto.js";
 import { getKeypairFromPrivateKey } from "../utils/solana.js";
-import { getSwitchboardService, OraclePriceData } from "./switchboard.service.js";
+import {
+  getSwitchboardService,
+  OraclePriceData,
+} from "./switchboard.service.js";
 import { createPaymentHandler } from "@faremeter/payment-solana/exact";
 import { wrap as wrapFetch } from "@faremeter/fetch";
 import { lookupKnownSPLToken } from "@faremeter/info/solana";
@@ -38,6 +41,7 @@ interface APIOption {
 
 interface AnalysisReport {
   executiveSummary: string;
+  oldFaithfulAnalysis?: any; // Old Faithful historical analysis
   patterns?: any;
   sentiment?: any;
   marketImpact?: any;
@@ -168,20 +172,26 @@ Keep it factual and reference oracle data for credibility.`;
 
     const availableAPIs: APIOption[] = [
       {
+        endpoint: "old-faithful-analysis",
+        price: 0.0014, // 0.0014 USDC (~$0.0014)
+        description: "Complete Solana history analysis via Old Faithful RPC",
+        value: "high",
+      },
+      {
         endpoint: "historical-patterns",
-        price: 0.5, // 0.5 USDC
+        price: 0.0013, // 0.0013 USDC (~$0.0013)
         description: "Historical whale behavior patterns and outcomes",
         value: "high",
       },
       {
         endpoint: "sentiment-analysis",
-        price: 0.3, // 0.3 USDC
+        price: 0.0012, // 0.0012 USDC (~$0.0012)
         description: "Social sentiment from Twitter, Reddit, crypto forums",
         value: "medium",
       },
       {
         endpoint: "market-impact",
-        price: 0.4, // 0.4 USDC
+        price: 0.0012, // 0.0012 USDC (~$0.0012)
         description: "Liquidity analysis and execution impact",
         value: "medium",
       },
@@ -197,19 +207,20 @@ Keep it factual and reference oracle data for credibility.`;
       ? this.switchboard.isDataReliable(this.oraclePrice).reliable
       : false;
 
-    this.log(`💰 User balance: ${userBalance.toFixed(4)} SOL`);
+    this.log(`💰 User balance: ${userBalance.toFixed(4)} USDC`);
     this.log(
       `📊 Oracle-verified impact: $${usdImpact.toLocaleString()} ` +
         `(confidence: ${this.oraclePrice?.confidence.toFixed(1) || "N/A"}%)`
     );
 
     // AUTONOMOUS DECISION LOGIC based on oracle data:
-    // - If USD impact > $1M AND high volatility: Buy all APIs (high stakes)
-    // - If USD impact > $500K: Buy at least 2 APIs
-    // - If oracle confidence < 90%: Be more conservative
-    // - If low volatility (<2%): Only buy 1 API (routine movement)
+    // - If USD impact > $1M AND high volatility: Buy all 4 APIs (high stakes)
+    // - If USD impact > $500K: Buy at least 2-3 APIs including old-faithful-analysis
+    // - If oracle confidence < 90%: Be more conservative, prioritize old-faithful + historical
+    // - If low volatility (<2%): old-faithful-analysis sufficient (most comprehensive)
+    // - ALWAYS prefer old-faithful-analysis as it provides the best historical context
 
-    const prompt = `You are an autonomous AI agent with FINANCIAL DECISION-MAKING power. You must decide which premium data APIs to purchase using Solana.
+    const prompt = `You are an autonomous AI agent with FINANCIAL DECISION-MAKING power. You must decide which premium data APIs to purchase using USDC.
 
 ORACLE-VERIFIED DATA (Switchboard, ${this.oraclePrice?.oracleCount || 0} nodes):
 - SOL Price: $${this.oraclePrice?.price.toFixed(2) || "N/A"}
@@ -222,33 +233,36 @@ Whale Action: ${this.whaleAlert.actionType} ${this.whaleAlert.amount} SOL on ${t
 
 Context: ${context}
 
-Available Budget: ${userBalance.toFixed(4)} SOL (must keep 0.05 SOL for tx fees)
+Available Budget: ${userBalance.toFixed(4)} USDC (must keep 0.1 USDC for tx fees)
 
 Available APIs:
-1. historical-patterns (0.05 SOL) - Past whale behavior & outcomes
-2. sentiment-analysis (0.03 SOL) - Social sentiment data  
-3. market-impact (0.04 SOL) - Liquidity & execution analysis
+1. old-faithful-analysis (0.0014 USDC) - Complete Solana history analysis via Old Faithful RPC [HIGH VALUE - RECOMMENDED]
+2. historical-patterns (0.0013 USDC) - Past whale behavior & outcomes
+3. sentiment-analysis (0.0012 USDC) - Social sentiment data  
+4. market-impact (0.0012 USDC) - Liquidity & execution analysis
 
 DECISION GUIDELINES (based on oracle data):
-- USD Impact > $1M + Volatility > 5%: Consider all 3 APIs (high stakes)
-- USD Impact > $500K: At least 2 APIs recommended
-- USD Impact < $100K: 1 API sufficient (routine movement)
-- Oracle Confidence < 90%: Be conservative, prioritize historical data
-- High Volatility (>5%): Sentiment + market-impact more valuable
-- Low Volatility (<2%): Historical patterns sufficient
+- USD Impact > $1M + Volatility > 5%: Consider all 4 APIs (high stakes)
+- USD Impact > $500K: At least 2-3 APIs recommended, MUST include old-faithful-analysis
+- USD Impact < $100K: 1-2 APIs sufficient (old-faithful-analysis + one other)
+- Oracle Confidence < 90%: Be conservative, prioritize old-faithful-analysis + historical-patterns
+- High Volatility (>5%): old-faithful-analysis + sentiment-analysis + market-impact more valuable
+- Low Volatility (<2%): old-faithful-analysis sufficient (most comprehensive)
+- ALWAYS prioritize old-faithful-analysis - it provides the most comprehensive historical context
 
 RULES:
-- You can purchase 0, 1, 2, or all 3 APIs
-- Total cost must be <= ${(userBalance - 0.05).toFixed(4)} SOL
+- You can purchase 0, 1, 2, 3, or all 4 APIs
+- Total cost must be <= ${(userBalance - 0.1).toFixed(4)} USDC
 - Choose based on VALUE for this specific whale action
-- USE ORACLE DATA to justify spending more/less SOL
+- USE ORACLE DATA to justify spending more/less USDC
 - Explain how oracle confidence influenced your decision
+- STRONGLY PREFER old-faithful-analysis as it provides the best historical context
 
 Respond with JSON only:
 {
   "apis": ["endpoint1", "endpoint2"],
   "reasoning": "Brief explanation of why you chose these specific APIs",
-  "totalCost": 0.08
+  "totalCost": 1.1
 }`;
 
     try {
@@ -262,9 +276,9 @@ Respond with JSON only:
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         this.log(
-          "⚠️ Agent decision unclear, using default: historical-patterns only"
+          "⚠️ Agent decision unclear, using default: old-faithful-analysis only"
         );
-        return [availableAPIs[0]!];
+        return [availableAPIs[0]!]; // old-faithful-analysis is first in array
       }
 
       const decision = JSON.parse(jsonMatch[0]);
@@ -276,14 +290,14 @@ Respond with JSON only:
       this.log(
         `📊 Selected APIs: ${selectedAPIs.map((api) => api.endpoint).join(", ")}`
       );
-      this.log(`💵 Total Cost: ${decision.totalCost} SOL`);
+      this.log(`💵 Total Cost: ${decision.totalCost} USDC`);
 
       return selectedAPIs;
     } catch (error) {
       this.log(
-        `⚠️ Decision error: ${error}. Defaulting to historical-patterns.`
+        `⚠️ Decision error: ${error}. Defaulting to old-faithful-analysis.`
       );
-      return [availableAPIs[0]!];
+      return [availableAPIs[0]!]; // old-faithful-analysis is first in array
     }
   }
 
@@ -309,9 +323,14 @@ Respond with JSON only:
       }
 
       // Import spl-token functions
-      const { getOrCreateAssociatedTokenAccount, transfer } = await import("@solana/spl-token");
-      const USDC_MINT = new PublicKey(process.env.DEVNET_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
-      
+      const { getOrCreateAssociatedTokenAccount, transfer } = await import(
+        "@solana/spl-token"
+      );
+      const USDC_MINT = new PublicKey(
+        process.env.DEVNET_USDC_MINT ||
+          "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+      );
+
       // Get user's USDC token account
       const userTokenAccount = await getOrCreateAssociatedTokenAccount(
         this.connection,
@@ -347,7 +366,13 @@ Respond with JSON only:
 
       // Now call the API
       this.log(`📞 Calling ${api.endpoint}...`);
-      const url = `${X402_API_BASE}/${api.endpoint}?address=${this.whaleAlert.walletAddress}`;
+      // Add action and token parameters for Old Faithful
+      const queryParams = new URLSearchParams({
+        address: this.whaleAlert.walletAddress,
+        action: this.whaleAlert.actionType,
+        token: this.whaleAlert.token || "SOL",
+      });
+      const url = `${X402_API_BASE}/${api.endpoint}?${queryParams}`;
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -357,7 +382,9 @@ Respond with JSON only:
       });
 
       if (!response.ok) {
-        throw new Error(`API returned ${response.status}: ${response.statusText}`);
+        throw new Error(
+          `API returned ${response.status}: ${response.statusText}`
+        );
       }
 
       const data = await response.json();
@@ -432,16 +459,28 @@ ${context}
 PREMIUM DATA PURCHASED:
 ${JSON.stringify(apiData, null, 2)}
 
+${
+  apiData["old-faithful-analysis"]
+    ? `
+OLD FAITHFUL HISTORICAL ANALYSIS (Complete Solana History):
+This whale has performed ${apiData["old-faithful-analysis"].data.patterns.totalOccurrences} similar transactions historically.
+Pattern accuracy: ${apiData["old-faithful-analysis"].data.patterns.patternAccuracy}%
+Average impact: ${apiData["old-faithful-analysis"].data.patterns.averagePriceImpact}
+Social sentiment: ${apiData["old-faithful-analysis"].data.sentiment.overall} (${apiData["old-faithful-analysis"].data.sentiment.score}%)
+`
+    : ""
+}
+
 Provide a JSON analysis with:
 {
-  "executiveSummary": "2-3 sentence overview referencing oracle-verified USD impact and data confidence",
+  "executiveSummary": "2-3 sentence overview referencing oracle-verified USD impact, historical patterns, and sentiment data",
   "recommendations": ["Action 1", "Action 2", "Action 3"],
   "riskScore": 0-10,
   "confidenceScore": 0-100,
   "tradingSignals": ["SIGNAL 1", "SIGNAL 2"]
 }
 
-IMPORTANT: Reference the oracle data in your summary to show data is trustworthy and decentralized. Explain why ${usdImpact > 1000000 ? "this large" : "this"} USD movement matters.`;
+IMPORTANT: Reference the oracle data and Old Faithful historical patterns to show data is trustworthy. Explain why ${usdImpact > 1000000 ? "this large" : "this"} USD movement matters based on historical precedent.`;
 
     try {
       const result = await this.ai.models.generateContent({
@@ -459,6 +498,7 @@ IMPORTANT: Reference the oracle data in your summary to show data is trustworthy
 
       const report: AnalysisReport = {
         ...analysis,
+        oldFaithfulAnalysis: apiData["old-faithful-analysis"]?.data,
         patterns: apiData["historical-patterns"]?.data,
         sentiment: apiData["sentiment-analysis"]?.data,
         marketImpact: apiData["market-impact"]?.data,
@@ -567,13 +607,13 @@ IMPORTANT: Reference the oracle data in your summary to show data is trustworthy
       );
 
       this.log(
-        `💰 Total spent: ${report.costBreakdown.totalAPIcost.toFixed(2)} USDC`
+        `💰 Total spent: ${report.costBreakdown.totalAPIcost.toFixed(4)} USDC`
       );
       this.log(
-        `💵 Agent fee: ${report.costBreakdown.agentFee.toFixed(2)} USDC`
+        `💵 Agent fee: ${report.costBreakdown.agentFee.toFixed(4)} USDC`
       );
       this.log(
-        `💸 Total charged: ${report.costBreakdown.totalCharged.toFixed(2)} USDC`
+        `💸 Total charged: ${report.costBreakdown.totalCharged.toFixed(4)} USDC`
       );
       this.log("🎉 Analysis complete!");
 

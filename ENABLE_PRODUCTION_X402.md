@@ -1,6 +1,7 @@
 # Enable Production x402 Payments
 
 ## Current State: Demo Mode
+
 - Server on localhost - Corbits can't reach it
 - No 402 responses - payments not required
 - USDC balance doesn't change
@@ -10,17 +11,20 @@
 ### Option 1: Use ngrok (Quick Testing)
 
 1. **Install ngrok:**
+
    ```bash
    brew install ngrok
    # or download from https://ngrok.com
    ```
 
 2. **Start your x402 server:**
+
    ```bash
    bun run apps/backend/index.ts
    ```
 
 3. **In another terminal, expose port 3001:**
+
    ```bash
    ngrok http 3001
    ```
@@ -28,6 +32,7 @@
 4. **Copy the public URL** (e.g., `https://abc123.ngrok.io`)
 
 5. **Update .env file:**
+
    ```bash
    X402_API_BASE=https://abc123.ngrok.io/api/x402
    ```

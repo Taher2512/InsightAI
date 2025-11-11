@@ -3,6 +3,7 @@ import cors from "cors";
 import { express as faremeter } from "@faremeter/middleware";
 import { solana } from "@faremeter/info";
 import { getSwitchboardService } from "./services/switchboard.service.js";
+import { getOldFaithfulService } from "./services/old-faithful.service.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -10,7 +11,9 @@ dotenv.config();
 const app = express();
 const PORT = parseInt(process.env.X402_API_PORT || "3001");
 const RECIPIENT_WALLET = process.env.X402_RECIPIENT_WALLET || "";
-const PUBLIC_URL = process.env.X402_PUBLIC_URL || `https://filamentous-margherita-hedonistically.ngrok-free.dev`;
+const PUBLIC_URL =
+  process.env.X402_PUBLIC_URL ||
+  `https://filamentous-margherita-hedonistically.ngrok-free.dev`;
 
 // Configure CORS
 app.use(cors({ origin: "*", credentials: true }));
@@ -19,14 +22,16 @@ app.use(express.json());
 // Route handlers (business logic)
 const handleHistoricalPatterns = (req: Request, res: Response) => {
   console.log("📞 API Call: historical-patterns (payment verified)");
-  
+
   const data = {
     endpoint: "historical-patterns",
     whaleAddress: req.query.address || "Unknown",
     data: {
       recentTrades: [
         {
-          timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          timestamp: new Date(
+            Date.now() - 7 * 24 * 60 * 60 * 1000
+          ).toISOString(),
           action: "deposit",
           amount: 45000,
           exchange: "Binance",
@@ -34,7 +39,9 @@ const handleHistoricalPatterns = (req: Request, res: Response) => {
           outcome: "Price rallied 8% within 24h",
         },
         {
-          timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+          timestamp: new Date(
+            Date.now() - 14 * 24 * 60 * 60 * 1000
+          ).toISOString(),
           action: "withdrawal",
           amount: 32000,
           exchange: "Coinbase",
@@ -42,7 +49,9 @@ const handleHistoricalPatterns = (req: Request, res: Response) => {
           outcome: "Price dropped 5% within 48h",
         },
         {
-          timestamp: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+          timestamp: new Date(
+            Date.now() - 21 * 24 * 60 * 60 * 1000
+          ).toISOString(),
           action: "deposit",
           amount: 28000,
           exchange: "Kraken",
@@ -66,7 +75,7 @@ const handleHistoricalPatterns = (req: Request, res: Response) => {
 
 const handleSentimentAnalysis = (req: Request, res: Response) => {
   console.log("📞 API Call: sentiment-analysis (payment verified)");
-  
+
   const data = {
     endpoint: "sentiment-analysis",
     whaleAddress: req.query.address || "Unknown",
@@ -105,7 +114,7 @@ const handleSentimentAnalysis = (req: Request, res: Response) => {
 
 const handleMarketImpact = async (req: Request, res: Response) => {
   console.log("📞 API Call: market-impact (payment verified)");
-  
+
   // Get real-time SOL price from Switchboard oracle
   const switchboard = getSwitchboardService();
   const oraclePrice = await switchboard.getSolPrice();
@@ -167,6 +176,33 @@ const handleMarketImpact = async (req: Request, res: Response) => {
   res.json(data);
 };
 
+// Old Faithful Historical Analysis - 0.0014 USDC
+const handleOldFaithfulAnalysis = async (req: Request, res: Response) => {
+  console.log("📞 API Call: old-faithful-analysis (payment verified)");
+
+  const whaleAddress = (req.query.address as string) || "Unknown";
+  const action = (req.query.action as "deposit" | "withdrawal") || "deposit";
+  const token = (req.query.token as string) || "SOL";
+
+  // Get historical analysis from Old Faithful
+  const oldFaithful = getOldFaithfulService();
+  const analysis = await oldFaithful.getHistoricalWhaleData(
+    whaleAddress,
+    action,
+    token
+  );
+
+  const data = {
+    endpoint: "old-faithful-analysis",
+    whaleAddress,
+    source: "Old Faithful RPC (Complete Solana History)",
+    data: analysis,
+  };
+
+  console.log(`✅ Served Old Faithful historical analysis`);
+  res.json(data);
+};
+
 // Health check endpoint (free)
 app.get("/", (req: Request, res: Response) => {
   res.send("Welcome to the x402 API server!");
@@ -185,11 +221,11 @@ app.get("/health", (req: Request, res: Response) => {
 // Start server with Corbits middleware
 export async function startX402Server() {
   console.log("🚀 Starting x402 API server...");
-  
+
   // NOTE: Corbits middleware disabled - ngrok free tier blocks facilitator verification
   // The agent uses manual USDC transfers which work perfectly
   // For production: deploy to Vercel/Railway/Render (no ngrok browser warning)
-  
+
   console.log("⚠️  Corbits middleware DISABLED (ngrok compatibility mode)");
   console.log("💡 Agent performs manual USDC transfers - balance IS deducted");
   console.log(`📍 Public URL: ${PUBLIC_URL}`);
@@ -198,81 +234,98 @@ export async function startX402Server() {
 
   // Skip Corbits initialization - serve endpoints directly
   const skipCorbits = true;
-  
+
   if (!skipCorbits) {
-  try {
-    // Create Corbits payment middlewares (DISABLED for ngrok compatibility)
+    try {
+      // Create Corbits payment middlewares (DISABLED for ngrok compatibility)
 
-    // Historical Patterns - 0.5 USDC
-    const historicalMiddleware = await faremeter.createMiddleware({
-      facilitatorURL: "https://facilitator.corbits.dev",
-      accepts: [
-        {
-          ...solana.x402Exact({
-            network: "devnet" as any,
-            asset: "USDC",
-            amount: 500000, // 0.5 USDC (6 decimals)
-            payTo: RECIPIENT_WALLET,
-          }),
-          resource: `${PUBLIC_URL}/api/x402/historical-patterns`,
-          description: "Historical whale behavior patterns and trade outcomes",
-        },
-      ],
-    });
+      // Historical Patterns - 0.0013 USDC
+      const historicalMiddleware = await faremeter.createMiddleware({
+        facilitatorURL: "https://facilitator.corbits.dev",
+        accepts: [
+          {
+            ...solana.x402Exact({
+              network: "devnet" as any,
+              asset: "USDC",
+              amount: 1300, // 0.0013 USDC (6 decimals)
+              payTo: RECIPIENT_WALLET,
+            }),
+            resource: `${PUBLIC_URL}/api/x402/historical-patterns`,
+            description:
+              "Historical whale behavior patterns and trade outcomes",
+          },
+        ],
+      });
 
-    // Sentiment Analysis - 0.3 USDC
-    const sentimentMiddleware = await faremeter.createMiddleware({
-      facilitatorURL: "https://facilitator.corbits.dev",
-      accepts: [
-        {
-          ...solana.x402Exact({
-            network: "devnet" as any,
-            asset: "USDC",
-            amount: 300000, // 0.3 USDC (6 decimals)
-            payTo: RECIPIENT_WALLET,
-          }),
-          resource: `${PUBLIC_URL}/api/x402/sentiment-analysis`,
-          description: "Social sentiment from Twitter, Reddit, crypto forums",
-        },
-      ],
-    });
+      // Sentiment Analysis - 0.0012 USDC
+      const sentimentMiddleware = await faremeter.createMiddleware({
+        facilitatorURL: "https://facilitator.corbits.dev",
+        accepts: [
+          {
+            ...solana.x402Exact({
+              network: "devnet" as any,
+              asset: "USDC",
+              amount: 1200, // 0.0012 USDC (6 decimals)
+              payTo: RECIPIENT_WALLET,
+            }),
+            resource: `${PUBLIC_URL}/api/x402/sentiment-analysis`,
+            description: "Social sentiment from Twitter, Reddit, crypto forums",
+          },
+        ],
+      });
 
-    // Market Impact - 0.4 USDC
-    const marketImpactMiddleware = await faremeter.createMiddleware({
-      facilitatorURL: "https://facilitator.corbits.dev",
-      accepts: [
-        {
-          ...solana.x402Exact({
-            network: "devnet" as any,
-            asset: "USDC",
-            amount: 400000, // 0.4 USDC (6 decimals)
-            payTo: RECIPIENT_WALLET,
-          }),
-          resource: `${PUBLIC_URL}/api/x402/market-impact`,
-          description: "Liquidity analysis with Switchboard oracle prices",
-        },
-      ],
-    });
+      // Market Impact - 0.0012 USDC
+      const marketImpactMiddleware = await faremeter.createMiddleware({
+        facilitatorURL: "https://facilitator.corbits.dev",
+        accepts: [
+          {
+            ...solana.x402Exact({
+              network: "devnet" as any,
+              asset: "USDC",
+              amount: 1200, // 0.0012 USDC (6 decimals)
+              payTo: RECIPIENT_WALLET,
+            }),
+            resource: `${PUBLIC_URL}/api/x402/market-impact`,
+            description: "Liquidity analysis with Switchboard oracle prices",
+          },
+        ],
+      });
 
-    console.log("✅ Corbits x402 middleware initialized successfully!");
+      console.log("✅ Corbits x402 middleware initialized successfully!");
 
-    // Register paywalled routes (middleware applied inline per Corbits docs pattern)
-    app.get("/api/x402/historical-patterns", historicalMiddleware, handleHistoricalPatterns);
-    app.get("/api/x402/sentiment-analysis", sentimentMiddleware, handleSentimentAnalysis);
-    app.get("/api/x402/market-impact", marketImpactMiddleware, handleMarketImpact);
-
-  } catch (error) {
-    console.error("❌ Failed to initialize Corbits middleware:", error);
-    console.log("⚠️  Falling back to direct serving (no payment enforcement)");
-  }
+      // Register paywalled routes (middleware applied inline per Corbits docs pattern)
+      app.get(
+        "/api/x402/historical-patterns",
+        historicalMiddleware,
+        handleHistoricalPatterns
+      );
+      app.get(
+        "/api/x402/sentiment-analysis",
+        sentimentMiddleware,
+        handleSentimentAnalysis
+      );
+      app.get(
+        "/api/x402/market-impact",
+        marketImpactMiddleware,
+        handleMarketImpact
+      );
+    } catch (error) {
+      console.error("❌ Failed to initialize Corbits middleware:", error);
+      console.log(
+        "⚠️  Falling back to direct serving (no payment enforcement)"
+      );
+    }
   } else {
-    console.log("✅ Serving endpoints directly (agent performs manual USDC payments)");
+    console.log(
+      "✅ Serving endpoints directly (agent performs manual USDC payments)"
+    );
   }
-  
+
   // Register routes without Corbits middleware (agent handles payment)
   app.get("/api/x402/historical-patterns", handleHistoricalPatterns);
   app.get("/api/x402/sentiment-analysis", handleSentimentAnalysis);
   app.get("/api/x402/market-impact", handleMarketImpact);
+  app.get("/api/x402/old-faithful-analysis", handleOldFaithfulAnalysis);
 
   app.listen(PORT, () => {
     console.log(`🔌 x402 API server running on port ${PORT}`);
@@ -281,12 +334,17 @@ export async function startX402Server() {
     console.log(`🌐 Network: Solana Devnet`);
     console.log(`📡 Protocol: x402-style (Manual USDC payments)`);
     console.log("");
-    console.log("� API Endpoints (USDC deducted by agent):");
-    console.log(`  GET /api/x402/historical-patterns → 0.5 USDC`);
-    console.log(`  GET /api/x402/sentiment-analysis → 0.3 USDC`);
-    console.log(`  GET /api/x402/market-impact → 0.4 USDC`);
+    console.log("💳 API Endpoints (USDC deducted by agent):");
+    console.log(
+      `  GET /api/x402/old-faithful-analysis → 0.0014 USDC (🆕 Old Faithful)`
+    );
+    console.log(`  GET /api/x402/historical-patterns → 0.0013 USDC`);
+    console.log(`  GET /api/x402/sentiment-analysis → 0.0012 USDC`);
+    console.log(`  GET /api/x402/market-impact → 0.0012 USDC`);
     console.log("");
     console.log("✅ Server ready! Agent performs manual USDC transfers.");
-    console.log("💡 For true x402: Deploy to Vercel/Railway (no ngrok warning)");
+    console.log(
+      "💡 For true x402: Deploy to Vercel/Railway (no ngrok warning)"
+    );
   });
 }

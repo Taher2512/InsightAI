@@ -3,6 +3,7 @@
 ## Prerequisites
 
 1. **Environment variables configured:**
+
    ```bash
    SOLANA_NETWORK=devnet
    USDC_MINT=4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
@@ -23,6 +24,7 @@ bun run apps/backend/index.ts
 ```
 
 Expected output:
+
 ```
 🤖 InsightAI Bot started
 🔗 Connected to Solana devnet
@@ -33,11 +35,13 @@ Expected output:
 ### 2. Check USDC Balance
 
 In Telegram:
+
 ```
 /balance
 ```
 
 Expected response:
+
 ```
 💰 Your Wallet Balance
 
@@ -52,10 +56,12 @@ Wallet: <your-wallet-address>
 ```
 
 Example whale addresses (Solana whales):
+
 - `7XawhbbxtsRcQA8KTkHT9f9nc6d69UwqCDh6U5EEbEmX`
 - `GVXRSBjFk6e6J3NbVPXohDJetcTjaeeuykUpbQF8UoMU`
 
 Expected response:
+
 ```
 🐋 Tracking wallet...
 Found X whale trades
@@ -67,6 +73,7 @@ Click "Get AI Analysis" to analyze (Cost: 1.2 USDC)
 Click **"Get AI Analysis"** button
 
 Expected console logs:
+
 ```
 🤖 Agent Service initialized for user: <user-id>
 📊 Budget: 5.00 USDC
@@ -101,6 +108,7 @@ Expected console logs:
 ```
 
 Expected response:
+
 ```
 💰 Your Wallet Balance
 
@@ -186,6 +194,7 @@ SELECT * FROM "X402Payment" ORDER BY "createdAt" DESC LIMIT 1;
 ```
 
 Expected record:
+
 ```
 {
   userId: <user-id>,
@@ -211,6 +220,7 @@ Expected record:
 ### Issue: "Insufficient USDC balance"
 
 **Solution:** Fund wallet with devnet USDC
+
 ```bash
 # Get devnet SOL first
 solana airdrop 2 <your-wallet-address> --url devnet
@@ -223,6 +233,7 @@ solana airdrop 2 <your-wallet-address> --url devnet
 **Expected behavior!** This means Corbits middleware is working.
 
 Check logs:
+
 - Payment handler should trigger automatically
 - Look for transaction signature
 - Verify USDC balance decreased
@@ -230,6 +241,7 @@ Check logs:
 ### Issue: "Agent stuck on API call"
 
 Check:
+
 1. Is x402-server running? (`localhost:3001/health`)
 2. Is CORS configured? (Should allow bot's requests)
 3. Check console logs for errors
@@ -255,7 +267,7 @@ Check:
 ✅ Payments recorded in database  
 ✅ USDC balance deducted correctly  
 ✅ No manual transfer code used  
-✅ Industry-standard x402 protocol implemented  
+✅ Industry-standard x402 protocol implemented
 
 ## Next Steps
 
