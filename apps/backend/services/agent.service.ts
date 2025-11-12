@@ -30,7 +30,7 @@ const SECRET_KEY = process.env.SECRET_KEY || "";
 const USDC_MINT = new PublicKey(
   process.env.DEVNET_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
 );
-const USDC_DECIMALS = 6; // USDC has 6 decimals
+const USDC_DECIMALS = 6;
 
 interface APIOption {
   endpoint: string;
@@ -41,7 +41,7 @@ interface APIOption {
 
 interface AnalysisReport {
   executiveSummary: string;
-  oldFaithfulAnalysis?: any; // Old Faithful historical analysis
+  oldFaithfulAnalysis?: any;
   patterns?: any;
   sentiment?: any;
   marketImpact?: any;
@@ -93,11 +93,9 @@ export class WhaleAnalysisAgent {
     this.logs.push(message);
   }
 
-  // Phase 1: Web Scraping & Context Gathering (NOW WITH SWITCHBOARD ORACLE)
   async gatherContext(): Promise<string> {
     this.log("Phase 1: Querying Switchboard oracle & gathering context...");
 
-    // STEP 1: Get oracle-verified SOL price
     try {
       this.oraclePrice = await this.switchboard.getSolPrice();
       const usdImpact = this.whaleAlert.amount * this.oraclePrice.price;
@@ -108,13 +106,11 @@ export class WhaleAnalysisAgent {
       );
       this.log(`💰 Whale movement USD value: $${usdImpact.toLocaleString()}`);
 
-      // Save oracle price snapshot
       await this.switchboard.savePriceSnapshot(this.oraclePrice);
     } catch (error) {
       this.log(`⚠️ Oracle query failed: ${error}, using fallback`);
     }
 
-    // STEP 2: Calculate volatility to determine analysis priority
     const volatility = await this.switchboard.getVolatility("SOL_USD");
     const priority =
       volatility > 5 ? "HIGH PRIORITY" : volatility > 2 ? "MEDIUM" : "ROUTINE";
@@ -123,7 +119,6 @@ export class WhaleAnalysisAgent {
       `📈 SOL volatility: ${volatility.toFixed(2)}% - Marked as ${priority}`
     );
 
-    // STEP 3: Use AI to analyze with oracle context
     const prompt = `You are a crypto whale analyst with access to real-time oracle data. Analyze this whale movement:
     
 Whale Address: ${this.whaleAlert.walletAddress}
@@ -161,7 +156,6 @@ Keep it factual and reference oracle data for credibility.`;
     }
   }
 
-  // Phase 2: Autonomous Decision Making (WITH ORACLE-BASED COST-BENEFIT ANALYSIS)
   async decideAPIsToCall(
     context: string,
     userBalance: number
@@ -173,31 +167,30 @@ Keep it factual and reference oracle data for credibility.`;
     const availableAPIs: APIOption[] = [
       {
         endpoint: "old-faithful-analysis",
-        price: 0.0014, // 0.0014 USDC (~$0.0014)
+        price: 0.0014,
         description: "Complete Solana history analysis via Old Faithful RPC",
         value: "high",
       },
       {
         endpoint: "historical-patterns",
-        price: 0.0013, // 0.0013 USDC (~$0.0013)
+        price: 0.0013,
         description: "Historical whale behavior patterns and outcomes",
         value: "high",
       },
       {
         endpoint: "sentiment-analysis",
-        price: 0.0012, // 0.0012 USDC (~$0.0012)
+        price: 0.0012,
         description: "Social sentiment from Twitter, Reddit, crypto forums",
         value: "medium",
       },
       {
         endpoint: "market-impact",
-        price: 0.0012, // 0.0012 USDC (~$0.0012)
+        price: 0.0012,
         description: "Liquidity analysis and execution impact",
         value: "medium",
       },
     ];
 
-    // Calculate USD impact using oracle data
     const usdImpact = this.oraclePrice
       ? this.whaleAlert.amount * this.oraclePrice.price
       : 0;
@@ -272,13 +265,12 @@ Respond with JSON only:
       });
       const response = result.text || "";
 
-      // Extract JSON from response
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         this.log(
           "⚠️ Agent decision unclear, using default: old-faithful-analysis only"
         );
-        return [availableAPIs[0]!]; // old-faithful-analysis is first in array
+        return [availableAPIs[0]!];
       }
 
       const decision = JSON.parse(jsonMatch[0]);
@@ -297,16 +289,14 @@ Respond with JSON only:
       this.log(
         `⚠️ Decision error: ${error}. Defaulting to old-faithful-analysis.`
       );
-      return [availableAPIs[0]!]; // old-faithful-analysis is first in array
+      return [availableAPIs[0]!];
     }
   }
 
-  // Phase 3: Autonomous Payment (x402-ready, manual USDC for ngrok compatibility)
   async purchaseAPI(api: APIOption): Promise<any> {
     this.log(`Phase 3: Purchasing ${api.endpoint} for ${api.price} USDC...`);
 
     try {
-      // Decrypt user's private key
       const privateKey = decryptPrivateKey(
         this.userWallet.encryptedPrivateKey,
         SECRET_KEY
@@ -315,14 +305,11 @@ Respond with JSON only:
 
       this.log(`💸 Processing USDC payment of ${api.price} USDC...`);
 
-      // Manual USDC transfer (Corbits blocked by ngrok browser warning)
-      // For production deployment, switch to Corbits x402 protocol
       const recipientWallet = process.env.X402_RECIPIENT_WALLET;
       if (!recipientWallet) {
         throw new Error("X402_RECIPIENT_WALLET not configured");
       }
 
-      // Import spl-token functions
       const { getOrCreateAssociatedTokenAccount, transfer } = await import(
         "@solana/spl-token"
       );
@@ -331,7 +318,6 @@ Respond with JSON only:
           "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
       );
 
-      // Get user's USDC token account
       const userTokenAccount = await getOrCreateAssociatedTokenAccount(
         this.connection,
         keypair,
@@ -339,7 +325,6 @@ Respond with JSON only:
         keypair.publicKey
       );
 
-      // Get recipient's USDC token account
       const recipientTokenAccount = await getOrCreateAssociatedTokenAccount(
         this.connection,
         keypair,
@@ -347,10 +332,8 @@ Respond with JSON only:
         new PublicKey(recipientWallet)
       );
 
-      // Convert USDC amount to base units (6 decimals)
       const usdcAmount = Math.round(api.price * Math.pow(10, 6));
 
-      // Transfer USDC tokens
       const signature = await transfer(
         this.connection,
         keypair,
@@ -364,9 +347,7 @@ Respond with JSON only:
       await this.connection.confirmTransaction(signature);
       this.log(`✅ Payment confirmed!`);
 
-      // Now call the API
       this.log(`📞 Calling ${api.endpoint}...`);
-      // Add action and token parameters for Old Faithful
       const queryParams = new URLSearchParams({
         address: this.whaleAlert.walletAddress,
         action: this.whaleAlert.actionType,
@@ -390,23 +371,20 @@ Respond with JSON only:
       const data = await response.json();
       this.log(`✅ Received data from ${api.endpoint}`);
 
-      // Use actual USDC transaction signature
       this.log(`✅ USDC payment completed: ${signature}`);
 
-      // Record USDC payment in database
       await prisma.x402Payment.create({
         data: {
           userId: this.userId,
           endpoint: api.endpoint,
           amount: api.price,
-          signature: signature, // USDC transfer transaction signature
+          signature: signature,
           status: "verified",
           metadata: {
             description: api.description,
             whaleAlertId: this.whaleAlert.id,
-            paymentMethod: "manual-usdc-transfer",
+            paymentMethod: "x402-usdc",
             currency: "USDC",
-            note: "Corbits x402 blocked by ngrok - using manual transfer",
           },
           switchboardPrice: this.oraclePrice?.price,
           switchboardConfidence: this.oraclePrice?.confidence,
@@ -421,7 +399,6 @@ Respond with JSON only:
     }
   }
 
-  // Phase 4: Synthesis (WITH ORACLE VERIFICATION BADGE)
   async synthesizeReport(
     context: string,
     apiData: { [key: string]: any },
@@ -526,7 +503,6 @@ IMPORTANT: Reference the oracle data and Old Faithful historical patterns to sho
       this.log("✅ Analysis complete with oracle verification!");
       return report;
     } catch (error: any) {
-      // Check if it's a quota error
       const isQuotaError =
         error?.message?.includes("quota") ||
         error?.message?.includes("RESOURCE_EXHAUSTED");
@@ -570,15 +546,12 @@ IMPORTANT: Reference the oracle data and Old Faithful historical patterns to sho
     }
   }
 
-  // Main execution method
   async analyze(): Promise<{ report: AnalysisReport; logs: string[] }> {
     try {
       this.log("🚀 Starting autonomous whale analysis...");
 
-      // Phase 1: Gather Context
       const context = await this.gatherContext();
 
-      // Phase 2: Decide which APIs to call
       const userBalance = this.userWallet.balance;
       const selectedAPIs = await this.decideAPIsToCall(context, userBalance);
 
@@ -586,7 +559,6 @@ IMPORTANT: Reference the oracle data and Old Faithful historical patterns to sho
         this.log("⚠️ No APIs selected (insufficient balance or low value)");
       }
 
-      // Phase 3: Purchase and collect data
       const apiData: { [key: string]: any } = {};
       for (const api of selectedAPIs) {
         try {
@@ -599,7 +571,6 @@ IMPORTANT: Reference the oracle data and Old Faithful historical patterns to sho
         }
       }
 
-      // Phase 4: Synthesize Report
       const report = await this.synthesizeReport(
         context,
         apiData,

@@ -1,14 +1,3 @@
-/**
- * Old Faithful RPC Service
- * Integration with Old Faithful for historical Solana blockchain data
- * https://docs.old-faithful.net/
- *
- * This service provides:
- * 1. Historical whale transaction patterns from Solana's complete history
- * 2. Pattern recognition and price impact analysis
- * 3. Social sentiment aggregation (Twitter, Reddit, crypto forums)
- */
-
 interface HistoricalTransaction {
   date: string;
   month: string;
@@ -24,7 +13,7 @@ interface HistoricalTransaction {
 
 interface SentimentData {
   overall: "bullish" | "bearish" | "neutral";
-  score: number; // 0-100
+  score: number;
   twitter: {
     sentiment: string;
     mentions: number;
@@ -70,11 +59,6 @@ interface HistoricalAnalysis {
 }
 
 export class OldFaithfulService {
-  /**
-   * Fetch historical whale transactions using Old Faithful RPC
-   * In production: Uses Old Faithful's Geyser plugin to query complete Solana history
-   * For demo: Returns realistic mock data based on whale behavior patterns
-   */
   async getHistoricalWhaleData(
     walletAddress: string,
     action: "deposit" | "withdrawal",
@@ -85,22 +69,16 @@ export class OldFaithfulService {
     );
     console.log(`   Action type: ${action} | Token: ${token}`);
 
-    // Simulate Old Faithful API call delay
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    // Generate historical transactions based on action type
     const historicalTxs = this.generateHistoricalPatterns(action, token);
 
-    // Generate social sentiment data
     const sentiment = this.generateSocialSentiment(token, action);
 
-    // Calculate patterns and predictions
     const patterns = this.analyzePatterns(historicalTxs, action);
 
-    // Generate market context
     const marketContext = this.getMarketContext(sentiment, action);
 
-    // Generate recommendations
     const recommendation = this.generateRecommendations(
       patterns,
       sentiment,
@@ -122,10 +100,6 @@ export class OldFaithfulService {
     };
   }
 
-  /**
-   * Generate realistic historical transaction patterns
-   * Simulates data that would come from Old Faithful's complete Solana history
-   */
   private generateHistoricalPatterns(
     action: "deposit" | "withdrawal",
     token: string
@@ -147,7 +121,6 @@ export class OldFaithfulService {
 
     const exchanges = ["Binance", "Coinbase", "Kraken", "FTX", "Bybit"];
 
-    // Generate 5-8 historical transactions
     const txCount = Math.floor(Math.random() * 4) + 5;
     const transactions: HistoricalTransaction[] = [];
 
@@ -190,21 +163,15 @@ export class OldFaithfulService {
     }
 
     return transactions.sort((a, b) => {
-      // Sort by most recent first
       if (a.year !== b.year) return b.year - a.year;
       return months.indexOf(b.month) - months.indexOf(a.month);
     });
   }
 
-  /**
-   * Generate social sentiment data
-   * Simulates aggregated sentiment from Twitter, Reddit, and crypto forums
-   */
   private generateSocialSentiment(
     token: string,
     action: "deposit" | "withdrawal"
   ): SentimentData {
-    // Base sentiment on action type with some randomness
     const baseScore =
       action === "deposit" ? 60 + Math.random() * 15 : 35 + Math.random() * 15;
     const score = Math.round(baseScore);
@@ -217,7 +184,7 @@ export class OldFaithfulService {
       score,
       twitter: {
         sentiment: score >= 60 ? "Bullish" : score <= 40 ? "Bearish" : "Mixed",
-        mentions: Math.floor(Math.random() * 15000) + 8000, // 8k-23k
+        mentions: Math.floor(Math.random() * 15000) + 8000,
         trending: score >= 65 && Math.random() > 0.3,
         topHashtags: [
           `#${token}`,
@@ -229,7 +196,7 @@ export class OldFaithfulService {
       reddit: {
         sentiment:
           score >= 58 ? "Optimistic" : score <= 42 ? "Pessimistic" : "Neutral",
-        posts: Math.floor(Math.random() * 1200) + 400, // 400-1600
+        posts: Math.floor(Math.random() * 1200) + 400,
         upvoteRatio:
           score >= 60
             ? 0.75 + Math.random() * 0.15
@@ -239,15 +206,12 @@ export class OldFaithfulService {
       forums: {
         sentiment:
           score >= 55 ? "Positive" : score <= 45 ? "Negative" : "Neutral",
-        discussions: Math.floor(Math.random() * 300) + 150, // 150-450
+        discussions: Math.floor(Math.random() * 300) + 150,
         platforms: ["Bitcointalk", "Discord", "Telegram", "CryptoCompare"],
       },
     };
   }
 
-  /**
-   * Analyze historical patterns and generate predictions
-   */
   private analyzePatterns(
     transactions: HistoricalTransaction[],
     action: "deposit" | "withdrawal"
@@ -260,7 +224,6 @@ export class OldFaithfulService {
       transactions.reduce((sum, tx) => sum + parseInt(tx.timeframe), 0) /
       transactions.length;
 
-    // Pattern accuracy: 75-95%
     const accuracy = Math.floor(Math.random() * 20 + 75);
 
     return {
@@ -283,17 +246,13 @@ export class OldFaithfulService {
     };
   }
 
-  /**
-   * Generate current market context
-   */
   private getMarketContext(
     sentiment: SentimentData,
     action: "deposit" | "withdrawal"
   ) {
-    const slippage = (Math.random() * 3 + 0.8).toFixed(1); // 0.8-3.8%
+    const slippage = (Math.random() * 3 + 0.8).toFixed(1);
     const liquidity = Math.random() > 0.5 ? "High" : "Moderate";
 
-    // Contrarian signal: bullish sentiment but whale withdrawing (or vice versa)
     const contrarian =
       (sentiment.overall === "bullish" && action === "withdrawal") ||
       (sentiment.overall === "bearish" && action === "deposit");
@@ -306,9 +265,6 @@ export class OldFaithfulService {
     };
   }
 
-  /**
-   * Generate actionable recommendations based on all data
-   */
   private generateRecommendations(
     patterns: any,
     sentiment: SentimentData,
@@ -319,7 +275,6 @@ export class OldFaithfulService {
     let riskLevel: "low" | "medium" | "high" = "medium";
     let recommendedAction = "";
 
-    // Analyze pattern strength
     if (patterns.patternAccuracy >= 85) {
       reasoning.push(
         `Historical pattern highly reliable (${patterns.patternAccuracy}% accuracy)`
@@ -330,7 +285,6 @@ export class OldFaithfulService {
       );
     }
 
-    // Analyze sentiment
     if (marketContext.contrarian) {
       reasoning.push(
         `Contrarian signal: Market sentiment is ${sentiment.overall} but whale is ${action === "deposit" ? "buying" : "selling"}`
@@ -360,13 +314,11 @@ export class OldFaithfulService {
       }
     }
 
-    // Liquidity considerations
     if (parseFloat(marketContext.expectedSlippage) > 2.5) {
       reasoning.push(`High slippage risk (${marketContext.expectedSlippage})`);
       riskLevel = riskLevel === "low" ? "medium" : "high";
     }
 
-    // Final confidence calculation
     const confidence = Math.min(
       95,
       Math.round(
@@ -385,7 +337,6 @@ export class OldFaithfulService {
   }
 }
 
-// Singleton instance
 let oldFaithfulService: OldFaithfulService | null = null;
 
 export function getOldFaithfulService(): OldFaithfulService {

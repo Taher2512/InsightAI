@@ -14,11 +14,9 @@ const RECIPIENT_WALLET = process.env.X402_RECIPIENT_WALLET || "";
 app.use(cors());
 app.use(express.json());
 
-// Create x402 payment middleware for each endpoint
 async function createPaywallMiddlewares() {
   const baseURL = `http://localhost:${PORT}`;
 
-  // Historical Patterns - 0.5 USDC
   const historicalMiddleware = await faremeter.createMiddleware({
     facilitatorURL: "https://facilitator.corbits.dev",
     accepts: [
@@ -26,7 +24,7 @@ async function createPaywallMiddlewares() {
         ...solana.x402Exact({
           network: "devnet",
           asset: "USDC",
-          amount: 500000, // 0.5 USDC (6 decimals)
+          amount: 500000,
           payTo: RECIPIENT_WALLET,
         }),
         resource: `${baseURL}/api/x402/historical-patterns`,
@@ -35,7 +33,6 @@ async function createPaywallMiddlewares() {
     ],
   });
 
-  // Sentiment Analysis - 0.3 USDC
   const sentimentMiddleware = await faremeter.createMiddleware({
     facilitatorURL: "https://facilitator.corbits.dev",
     accepts: [
@@ -43,7 +40,7 @@ async function createPaywallMiddlewares() {
         ...solana.x402Exact({
           network: "devnet",
           asset: "USDC",
-          amount: 300000, // 0.3 USDC (6 decimals)
+          amount: 300000,
           payTo: RECIPIENT_WALLET,
         }),
         resource: `${baseURL}/api/x402/sentiment-analysis`,
@@ -52,7 +49,6 @@ async function createPaywallMiddlewares() {
     ],
   });
 
-  // Market Impact - 0.4 USDC
   const marketImpactMiddleware = await faremeter.createMiddleware({
     facilitatorURL: "https://facilitator.corbits.dev",
     accepts: [
@@ -60,7 +56,7 @@ async function createPaywallMiddlewares() {
         ...solana.x402Exact({
           network: "devnet",
           asset: "USDC",
-          amount: 400000, // 0.4 USDC (6 decimals)
+          amount: 400000,
           payTo: RECIPIENT_WALLET,
         }),
         resource: `${baseURL}/api/x402/market-impact`,
@@ -73,14 +69,11 @@ async function createPaywallMiddlewares() {
   return { historicalMiddleware, sentimentMiddleware, marketImpactMiddleware };
 }
 
-// Initialize middlewares
 let middlewares: any = {};
 
-// ENDPOINT 1: Historical Patterns (with x402 payment)
 app.get(
   "/api/x402/historical-patterns",
   async (req: Request, res: Response, next) => {
-    // Apply middleware if initialized
     if (middlewares.historicalMiddleware) {
       return middlewares.historicalMiddleware(req, res, next);
     }
@@ -140,7 +133,6 @@ app.get(
   }
 );
 
-// ENDPOINT 2: Sentiment Analysis (with x402 payment)
 app.get(
   "/api/x402/sentiment-analysis",
   async (req: Request, res: Response, next) => {
@@ -189,7 +181,6 @@ app.get(
   }
 );
 
-// ENDPOINT 3: Market Impact (with x402 payment + Switchboard oracle)
 app.get(
   "/api/x402/market-impact",
   async (req: Request, res: Response, next) => {
@@ -199,7 +190,6 @@ app.get(
     next();
   },
   async (req: Request, res: Response) => {
-    // Get real-time SOL price from Switchboard oracle
     const switchboard = getSwitchboardService();
     const oraclePrice = await switchboard.getSolPrice();
 
@@ -263,7 +253,6 @@ app.get(
   }
 );
 
-// Health check
 app.get("/health", (req: Request, res: Response) => {
   res.json({
     status: "ok",
@@ -274,7 +263,6 @@ app.get("/health", (req: Request, res: Response) => {
   });
 });
 
-// Start server with Corbits x402 middleware
 export async function startX402Server() {
   console.log("⏳ Initializing Corbits x402 payment middleware...");
 

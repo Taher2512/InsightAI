@@ -17,7 +17,6 @@ import {
 } from "./services/whale.service.js";
 import { formatAddress, getSolscanUrl } from "./utils/solana.js";
 
-// Load environment variables
 dotenv.config();
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -32,13 +31,10 @@ if (!BOT_TOKEN) {
   throw new Error("TELEGRAM_BOT_TOKEN environment variable is required");
 }
 
-// Initialize bot
 const bot = new Telegraf(BOT_TOKEN);
 
-// Helper: sleep
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-// Stream mock analysis progress to the user by editing the "working" message.
 async function streamAnalysisProgress(
   telegram: any,
   workingMsg: any,
@@ -94,15 +90,12 @@ async function streamAnalysisProgress(
 
     let built = "🤖 Agent Working...\n\n";
 
-    // Start cycling through steps while agentPromise is pending
     for (let i = 0; i < steps.length; i++) {
-      // If agent finished, break early
       const finished = await Promise.race([
         agentPromise.then(() => true).catch(() => true),
         sleep(900).then(() => false),
       ]);
 
-      // build message content
       built = "🤖 Agent Working...\n\n";
       for (let j = 0; j < steps.length; j++) {
         const s = steps[j];
@@ -115,7 +108,6 @@ async function streamAnalysisProgress(
         }
       }
 
-      // append a footer with current mock totals (updated later when agent finishes)
       const totalSoFar = steps
         .slice(0, i + 1)
         .reduce((a, b) => a + (b.cost || 0), 0);
@@ -125,20 +117,16 @@ async function streamAnalysisProgress(
         await telegram.editMessageText(chatId, messageId, undefined, built, {
           parse_mode: "Markdown",
         });
-      } catch (e) {
-        // ignore edit errors (message may have been deleted)
-      }
+      } catch (e) {}
 
       if (finished) break;
     }
 
-    // Wait for agent result (if not already)
     let report: any = null;
     try {
       const res = await agentPromise;
       report = res.report;
     } catch (e) {
-      // Agent failed; mark as failed
       const text = `🤖 Agent Working...\n\n❌ Agent failed while running.\nPlease try again later.`;
       await telegram.editMessageText(chatId, messageId, undefined, text, {
         parse_mode: "Markdown",
@@ -146,7 +134,6 @@ async function streamAnalysisProgress(
       return;
     }
 
-    // Build final progress summary using actual cost breakdown when available
     const apis = report?.costBreakdown?.apisUsed || [];
     const costPerAPI = report?.costBreakdown?.costPerAPI || {};
     const totalAPIcost = report?.costBreakdown?.totalAPIcost || 0;
@@ -188,15 +175,12 @@ async function streamAnalysisProgress(
       await telegram.editMessageText(chatId, messageId, undefined, finalText, {
         parse_mode: "Markdown",
       });
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   } catch (err) {
     console.error("Error streaming progress:", err);
   }
 }
 
-// Command: /start
 bot.command("start", async (ctx) => {
   try {
     const welcomeMessage = `
@@ -253,7 +237,6 @@ Let's get started! Use /wallet to create your wallet.
   }
 });
 
-// Command: /wallet
 bot.command("wallet", async (ctx) => {
   try {
     const telegramId = ctx.from.id.toString();
@@ -291,7 +274,6 @@ bot.command("wallet", async (ctx) => {
         link_preview_options: { is_disabled: true },
       });
     } else {
-      // Update balance
       const updatedBalance = await updateWalletBalance(result.publicKey);
       const solscanUrl = getSolscanUrl(result.publicKey);
 
@@ -319,7 +301,6 @@ bot.command("wallet", async (ctx) => {
   }
 });
 
-// Command: /balance
 bot.command("balance", async (ctx) => {
   try {
     const telegramId = ctx.from.id.toString();
@@ -375,7 +356,6 @@ ${
   }
 });
 
-// Command: /deposit
 bot.command("deposit", async (ctx) => {
   try {
     const telegramId = ctx.from.id.toString();
@@ -433,7 +413,6 @@ bot.command("deposit", async (ctx) => {
   }
 });
 
-// Command: /track
 bot.command("track", async (ctx) => {
   try {
     const whales = getTrackedWhales();
@@ -456,7 +435,6 @@ bot.command("track", async (ctx) => {
   }
 });
 
-// Command: /alerts
 bot.command("alerts", async (ctx) => {
   try {
     await ctx.reply("⏳ Fetching recent alerts...");
@@ -475,7 +453,7 @@ bot.command("alerts", async (ctx) => {
         (Date.now() - alert.timestamp.getTime()) / 60000
       );
       const timeStr = timeDiff < 1 ? "Just now" : `${timeDiff} min ago`;
-      const value = (alert.amount * 150).toLocaleString(); // Mock $150/SOL
+      const value = (alert.amount * 150).toLocaleString(); // Estimated value
 
       message += `━━━━━━━━━━━━━━━━\n`;
       message += `📍 ${formatAddress(alert.walletAddress)}\n`;
@@ -496,7 +474,6 @@ bot.command("alerts", async (ctx) => {
   }
 });
 
-// Command: /help
 bot.command("oracle", async (ctx) => {
   try {
     await ctx.reply("📡 Querying Switchboard oracle network...");
@@ -506,7 +483,6 @@ bot.command("oracle", async (ctx) => {
     );
     const switchboard = getSwitchboardService();
 
-    // Fetch all prices from Switchboard
     const prices = await switchboard.getAllPrices();
 
     const oracleMessage = `
@@ -548,7 +524,6 @@ _All prices verified by Switchboard decentralized oracle network_
   }
 });
 
-// Command: /asset - Show tracked assets with real oracle prices
 bot.command("asset", async (ctx) => {
   try {
     await ctx.reply("📊 Fetching asset data from Switchboard oracle...");
@@ -558,7 +533,6 @@ bot.command("asset", async (ctx) => {
     );
     const switchboard = getSwitchboardService();
 
-    // Fetch all prices from Switchboard
     const prices = await switchboard.getAllPrices();
 
     const assetMessage = `
@@ -584,7 +558,6 @@ Multi-chain whale tracking launching next week!
   }
 });
 
-// Command: /agent - Show agent performance dashboard
 bot.command("agent", async (ctx) => {
   try {
     const agentMessage = `
@@ -650,7 +623,6 @@ Get devnet SOL: https://faucet.solana.com
   }
 });
 
-// Handle callback queries (button clicks) - PHASE 2: AI Agent Integration
 bot.on("callback_query", async (ctx) => {
   try {
     if (!("data" in ctx.callbackQuery)) return;
@@ -660,7 +632,6 @@ bot.on("callback_query", async (ctx) => {
       const alertId = data.replace("analyze_", "");
       const telegramId = ctx.from.id.toString();
 
-      // Get user and wallet
       const wallet = await getUserWallet(telegramId);
 
       if (!wallet) {
@@ -669,7 +640,6 @@ bot.on("callback_query", async (ctx) => {
         return;
       }
 
-      // Update balance
       const balance = await updateWalletBalance(wallet.publicKey);
       const usdcBalance = await getWalletUSDCBalance(wallet.publicKey);
 
@@ -677,7 +647,6 @@ bot.on("callback_query", async (ctx) => {
         process.env.MINIMUM_ANALYSIS_COST_USDC || "0.025"
       );
 
-      // Check USDC balance (Corbits x402 uses USDC)
       if (usdcBalance < MINIMUM_USDC) {
         await ctx.answerCbQuery();
         await ctx.reply(
@@ -691,7 +660,6 @@ bot.on("callback_query", async (ctx) => {
         return;
       }
 
-      // Also check SOL for transaction fees
       if (balance < 0.01) {
         await ctx.answerCbQuery();
         await ctx.reply(
@@ -706,7 +674,6 @@ bot.on("callback_query", async (ctx) => {
 
       await ctx.answerCbQuery("🤖 Starting AI analysis...");
 
-      // Get whale alert details
       const whaleAlert = await prisma.whaleAlert.findUnique({
         where: { id: alertId },
       });
@@ -716,7 +683,6 @@ bot.on("callback_query", async (ctx) => {
         return;
       }
 
-      // Show agent working message
       const workingMsg = await ctx.reply(
         `🤖 *AI Agent Working...*\n\n` +
           `⏳ Analyzing whale transaction...\n` +
@@ -726,7 +692,6 @@ bot.on("callback_query", async (ctx) => {
       );
 
       try {
-        // Import and initialize agent
         const { WhaleAnalysisAgent } = await import(
           "./services/agent.service.js"
         );
@@ -734,9 +699,7 @@ bot.on("callback_query", async (ctx) => {
 
         const agent = new WhaleAnalysisAgent(user.id, wallet, whaleAlert);
 
-        // Run autonomous analysis in background and stream mock realtime reasoning
         const agentPromise = agent.analyze();
-        // Start streaming progress updates (non-blocking)
         streamAnalysisProgress(
           ctx.telegram,
           workingMsg,
@@ -744,15 +707,12 @@ bot.on("callback_query", async (ctx) => {
           whaleAlert
         );
 
-        // Await final agent result
         const { report, logs } = await agentPromise;
 
-        // Helper function to escape Markdown special characters
         const escapeMarkdown = (text: string) => {
           return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, "\\$&");
         };
 
-        // Format and send report
         const reportMessage = `
 🐋 *WHALE ANALYSIS COMPLETE*
 
@@ -842,7 +802,6 @@ ${logs
 
         await ctx.reply(reportMessage, { parse_mode: "Markdown" });
 
-        // Save analysis to database
         const analysis = await markAlertAnalyzed(alertId, user.id);
         if (analysis) {
           await prisma.analysis.update({
@@ -854,7 +813,6 @@ ${logs
           });
         }
 
-        // Update wallet balance
         await updateWalletBalance(wallet.publicKey);
       } catch (agentError) {
         console.error("Agent error:", agentError);
@@ -873,13 +831,11 @@ ${logs
   }
 });
 
-// Error handler
 bot.catch((err, ctx) => {
   console.error("Bot error:", err);
   ctx.reply("❌ An unexpected error occurred. Please try again later.");
 });
 
-// Start whale monitoring
 async function startWhaleMonitoring() {
   console.log(
     `🐋 Starting whale monitoring (interval: ${WHALE_ALERT_INTERVAL}ms)`
@@ -889,14 +845,13 @@ async function startWhaleMonitoring() {
     try {
       const alert = await generateMockWhaleAlert();
 
-      // Send alert to all users (in production, this would be filtered)
       const users = await prisma.user.findMany();
 
       const timeDiff = Math.floor(
         (Date.now() - alert.timestamp.getTime()) / 60000
       );
       const timeStr = timeDiff < 1 ? "Just now" : `${timeDiff} minutes ago`;
-      const value = (alert.amount * 150).toLocaleString(); // Mock $150/SOL
+      const value = (alert.amount * 150).toLocaleString(); // Estimated value
 
       const message = `
 🐋 *WHALE ALERT*
@@ -914,7 +869,6 @@ Click below to get AI-powered analysis of this transaction!
         Markup.button.callback(`🤖 Get AI Analysis`, `analyze_${alert.id}`),
       ]);
 
-      // Send to all users
       for (const user of users) {
         try {
           await bot.telegram.sendMessage(user.telegramId, message, {
@@ -936,32 +890,26 @@ Click below to get AI-powered analysis of this transaction!
   }, WHALE_ALERT_INTERVAL);
 }
 
-// Start bot
 async function start() {
   try {
     console.log("🤖 Starting Solana Whale Tracker Bot...");
     console.log("");
 
-    // Test database connection
     await prisma.$connect();
     console.log("✅ Database connected");
 
-    // Start x402 API server (Phase 2)
     const { startX402Server } = await import("./x402-server.js");
     startX402Server();
     console.log("");
 
-    // Start whale monitoring
     startWhaleMonitoring();
 
-    // Launch bot
     await bot.launch();
     console.log("✅ Telegram Bot is running!");
     console.log("🤖 AI Agent ready for autonomous analysis");
     console.log("");
     console.log("Press Ctrl+C to stop");
 
-    // Enable graceful stop
     process.once("SIGINT", async () => {
       console.log("\n🛑 Stopping bot...");
       bot.stop("SIGINT");
@@ -981,5 +929,4 @@ async function start() {
   }
 }
 
-// Run the bot
 start();

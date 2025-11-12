@@ -8,12 +8,8 @@ if (!SECRET_KEY) {
   throw new Error("SECRET_KEY environment variable is required");
 }
 
-/**
- * Creates a new wallet for a user
- */
 export async function createWallet(telegramId: string, username?: string) {
   try {
-    // Check if user already has a wallet
     const existingUser = await prisma.user.findUnique({
       where: { telegramId },
       include: { wallet: true },
@@ -27,13 +23,10 @@ export async function createWallet(telegramId: string, username?: string) {
       };
     }
 
-    // Generate new Solana wallet
     const { publicKey, privateKey } = generateWallet();
 
-    // Encrypt private key
     const encryptedPrivateKey = encryptPrivateKey(privateKey, SECRET_KEY);
 
-    // Create or update user and wallet
     const user =
       existingUser ||
       (await prisma.user.create({
@@ -63,9 +56,6 @@ export async function createWallet(telegramId: string, username?: string) {
   }
 }
 
-/**
- * Gets a user's wallet
- */
 export async function getUserWallet(telegramId: string) {
   try {
     const user = await prisma.user.findUnique({
@@ -80,9 +70,6 @@ export async function getUserWallet(telegramId: string) {
   }
 }
 
-/**
- * Updates wallet balance from blockchain
- */
 export async function updateWalletBalance(publicKey: string): Promise<number> {
   try {
     const balance = await getBalance(publicKey);
@@ -99,9 +86,6 @@ export async function updateWalletBalance(publicKey: string): Promise<number> {
   }
 }
 
-/**
- * Gets USDC balance for a wallet
- */
 export async function getWalletUSDCBalance(publicKey: string): Promise<number> {
   try {
     const usdcBalance = await getUSDCBalance(publicKey);
@@ -112,9 +96,6 @@ export async function getWalletUSDCBalance(publicKey: string): Promise<number> {
   }
 }
 
-/**
- * Gets user by telegram ID, creates if doesn't exist
- */
 export async function getOrCreateUser(telegramId: string, username?: string) {
   try {
     let user = await prisma.user.findUnique({

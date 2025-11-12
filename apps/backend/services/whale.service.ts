@@ -1,6 +1,5 @@
 import { prismaClient as prisma } from "db/client";
 
-// Mock whale addresses (real Solana addresses for realism)
 export const WHALE_ADDRESSES = [
   "5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9",
   "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
@@ -23,9 +22,6 @@ interface WhaleAlert {
   timestamp: Date;
 }
 
-/**
- * Generates a random whale alert
- */
 function generateRandomAlert(): WhaleAlert {
   const address =
     WHALE_ADDRESSES[Math.floor(Math.random() * WHALE_ADDRESSES.length)]!;
@@ -44,9 +40,6 @@ function generateRandomAlert(): WhaleAlert {
   };
 }
 
-/**
- * Creates a whale alert in the database
- */
 export async function createWhaleAlert(alert: WhaleAlert) {
   try {
     const whaleAlert = await prisma.whaleAlert.create({
@@ -70,17 +63,11 @@ export async function createWhaleAlert(alert: WhaleAlert) {
   }
 }
 
-/**
- * Generates and stores a random whale alert
- */
 export async function generateMockWhaleAlert() {
   const alert = generateRandomAlert();
   return await createWhaleAlert(alert);
 }
 
-/**
- * Gets recent whale alerts
- */
 export async function getRecentAlerts(limit: number = 10) {
   try {
     return await prisma.whaleAlert.findMany({
@@ -93,16 +80,10 @@ export async function getRecentAlerts(limit: number = 10) {
   }
 }
 
-/**
- * Gets tracked whale addresses
- */
 export function getTrackedWhales() {
   return WHALE_ADDRESSES;
 }
 
-/**
- * Marks an alert as analyzed
- */
 export async function markAlertAnalyzed(
   alertId: string,
   userId: string
@@ -115,19 +96,17 @@ export async function markAlertAnalyzed(
   createdAt: Date;
 }> {
   try {
-    // Update alert
     await prisma.whaleAlert.update({
       where: { id: alertId },
       data: { analyzed: true },
     });
 
-    // Create analysis record
     const analysis = await prisma.analysis.create({
       data: {
         whaleAlertId: alertId,
         userId,
         cost: 0.15,
-        report: null, // Will be populated in Phase 2
+        report: null,
       },
     });
 
