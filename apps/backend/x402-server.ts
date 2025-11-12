@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = parseInt(process.env.X402_API_PORT || "3001");
+const PORT = parseInt(process.env.PORT || process.env.X402_API_PORT || "3001");
 const RECIPIENT_WALLET = process.env.X402_RECIPIENT_WALLET || "";
 const PUBLIC_URL = process.env.X402_PUBLIC_URL || `http://localhost:3001`;
 
