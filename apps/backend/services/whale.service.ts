@@ -103,7 +103,17 @@ export function getTrackedWhales() {
 /**
  * Marks an alert as analyzed
  */
-export async function markAlertAnalyzed(alertId: string, userId: string) {
+export async function markAlertAnalyzed(
+  alertId: string,
+  userId: string
+): Promise<{
+  id: string;
+  whaleAlertId: string;
+  userId: string;
+  cost: number;
+  report: any;
+  createdAt: Date;
+}> {
   try {
     // Update alert
     await prisma.whaleAlert.update({
