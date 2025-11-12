@@ -11,9 +11,7 @@ dotenv.config();
 const app = express();
 const PORT = parseInt(process.env.X402_API_PORT || "3001");
 const RECIPIENT_WALLET = process.env.X402_RECIPIENT_WALLET || "";
-const PUBLIC_URL =
-  process.env.X402_PUBLIC_URL ||
-  `https://filamentous-margherita-hedonistically.ngrok-free.dev`;
+const PUBLIC_URL = process.env.X402_PUBLIC_URL || `http://localhost:3001`;
 
 // Configure CORS
 app.use(cors({ origin: "*", credentials: true }));
