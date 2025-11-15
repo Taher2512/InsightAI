@@ -289,14 +289,10 @@ export async function startX402Server() {
       );
     } catch (error) {
       console.error("❌ Failed to initialize Corbits middleware:", error);
-      console.log(
-        "⚠️  Falling back to direct serving"
-      );
+      console.log("⚠️  Falling back to direct serving");
     }
   } else {
-    console.log(
-      "✅ Serving x402 endpoints"
-    );
+    console.log("✅ Serving x402 endpoints");
   }
 
   app.get("/api/x402/historical-patterns", handleHistoricalPatterns);
